@@ -1,4 +1,12 @@
- {
+{
+  "id": "General.app",
+  "name": "General_自用订阅",
+  "author": "@dcpeng",
+  "icon": "https://github.com/General74110/QuantumultX/raw/master/Icon/General.png",
+  "repo": "https://github.com/General74110/QuantumultX",
+  "apps": 
+    
+{
       "id": "github-private-repo",
       "name": "Github私有仓库",
       "keys": [
@@ -28,3 +36,4 @@
         "https://raw.githubusercontent.com/General74110/QuantumultX/master/Icon/Github.png"
       ]
     }
+}
