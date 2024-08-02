@@ -1,10 +1,10 @@
 let config = {
-  username: "Peng-YM", // 用户名
-  token: "Your token", // token
+  username: "Peng-YM", // 默认用户名
+  token: "Your token", // 默认 token
 };
 
-// 从 BoxJS 加载用户配置
-const boxConfig = $prefs.valueForKey("github_private_repo");
+// 从 BoxJS 读取用户配置
+const boxConfig = $persistentStore.read("github_private_repo");
 if (boxConfig) {
   config = JSON.parse(boxConfig);
 }
@@ -23,13 +23,10 @@ function handleRequest() {
   }
 }
 
-// 检查是否需要处理嵌套引用
-if ($request.url.includes("githubusercontent.com")) {
-  handleRequest();
-} else {
-  // 处理公开仓库中引用的私有仓库文件
+// 处理嵌套引用的函数
+function fetchContent(url) {
   const fetch = require("node-fetch");
-  fetch($request.url)
+  fetch(url)
     .then(response => response.text())
     .then(content => {
       const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
@@ -41,13 +38,24 @@ if ($request.url.includes("githubusercontent.com")) {
         .then(privateResponse => privateResponse.text())
         .then(privateContent => {
           $done({ response: { body: privateContent } });
+        })
+        .catch(error => {
+          console.error(`Error fetching private content: ${error}`);
+          $done({});
         });
       } else {
         $done({ response: { body: content } });
       }
     })
     .catch(error => {
-      console.error(error);
+      console.error(`Error fetching content: ${error}`);
       $done({});
     });
+}
+
+// 检查并处理请求
+if ($request.url.includes("githubusercontent.com")) {
+  handleRequest();
+} else {
+  fetchContent($request.url);
 }
