@@ -13,23 +13,20 @@ if (boxConfig) {
 const usernameMatch = $request.url.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
 const username = usernameMatch ? usernameMatch[1] : null;
 
-// 检查 URL 中是否包含特定关键词(用户名)
+// 检查 URL 中是否包含特定关键词
 const isTargetRepo = $request.url.includes("General74110");
 
-// 定义处理函数
-function handleRequest() {
-  if (username && username === config.username && isTargetRepo) {
+if (isTargetRepo) {
+  if (username && username === config.username) {
     console.log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
     $done({});
   }
-}
-
-// 处理嵌套引用的函数
-function fetchContent(url) {
+} else {
+  // 处理嵌套引用的函数
   const fetch = require("node-fetch");
-  fetch(url)
+  fetch($request.url)
     .then(response => response.text())
     .then(content => {
       if (content.includes("General74110")) {
@@ -58,11 +55,4 @@ function fetchContent(url) {
       console.error(`Error fetching content: ${error}`);
       $done({});
     });
-}
-
-// 检查并处理请求
-if (isTargetRepo) {
-  handleRequest();
-} else {
-  fetchContent($request.url);
 }
