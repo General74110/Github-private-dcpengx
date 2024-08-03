@@ -13,8 +13,8 @@ if (boxConfig) {
 const usernameMatch = $request.url.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
 const username = usernameMatch ? usernameMatch[1] : null;
 
-// 检查 URL 中是否包含特定关键词
-const isTargetRepo = $request.url.includes("General74110");//私有仓库关键字
+// 检查 URL 中是否包含特定关键词(用户名)
+const isTargetRepo = $request.url.includes("General74110");
 
 // 定义处理函数
 function handleRequest() {
@@ -32,20 +32,24 @@ function fetchContent(url) {
   fetch(url)
     .then(response => response.text())
     .then(content => {
-      const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
-      if (privateRepoMatch && privateRepoMatch[1] === config.username) {
-        console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
-        fetch(privateRepoMatch[0], {
-          headers: { Authorization: `token ${config.token}` }
-        })
-        .then(privateResponse => privateResponse.text())
-        .then(privateContent => {
-          $done({ response: { body: privateContent } });
-        })
-        .catch(error => {
-          console.error(`Error fetching private content: ${error}`);
-          $done({});
-        });
+      if (content.includes("General74110")) {
+        const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
+        if (privateRepoMatch && privateRepoMatch[1] === config.username) {
+          console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
+          fetch(privateRepoMatch[0], {
+            headers: { Authorization: `token ${config.token}` }
+          })
+          .then(privateResponse => privateResponse.text())
+          .then(privateContent => {
+            $done({ response: { body: privateContent } });
+          })
+          .catch(error => {
+            console.error(`Error fetching private content: ${error}`);
+            $done({});
+          });
+        } else {
+          $done({ response: { body: content } });
+        }
       } else {
         $done({ response: { body: content } });
       }
@@ -57,7 +61,7 @@ function fetchContent(url) {
 }
 
 // 检查并处理请求
-if (username && username === config.username && isTargetRepo) {
+if (isTargetRepo) {
   handleRequest();
 } else {
   fetchContent($request.url);
