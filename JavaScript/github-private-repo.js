@@ -58,6 +58,7 @@ function fetchContent(url) {
       console.error(`Error fetching content: ${error}`);
       $done({});
     } else {
+      // 处理嵌套的私有仓库引用
       const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
       if (privateRepoMatch && privateRepoMatch[1] === config.username) {
         console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
