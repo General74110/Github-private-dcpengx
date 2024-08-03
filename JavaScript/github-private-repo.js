@@ -1,12 +1,21 @@
 let config = {
   username: "default_username", // 默认用户名
-  token: "default_token",       // 默认 token
+  token: "default_token"       // 默认 token
 };
 
-// 从 BoxJS 读取用户配置
-const boxConfig = $persistentStore.read("github_private_repo");
-if (boxConfig) {
-  config = JSON.parse(boxConfig);
+// 检查运行环境并读取配置
+if (typeof $persistentStore !== 'undefined') {
+  // Loon 环境
+  const boxConfig = $persistentStore.read("github_private_repo");
+  if (boxConfig) {
+    config = JSON.parse(boxConfig);
+  }
+} else if (typeof $prefs !== 'undefined') {
+  // Quantumult X 环境
+  const boxConfig = $prefs.valueForKey("github_private_repo");
+  if (boxConfig) {
+    config = JSON.parse(boxConfig);
+  }
 }
 
 // 获取请求的用户名
@@ -16,23 +25,26 @@ const username = usernameMatch ? usernameMatch[1] : null;
 // 检查 URL 中是否包含特定关键词
 const isTargetRepo = $request.url.includes("General74110");
 
-if (isTargetRepo) {
-  if (username && username === config.username) {
-    console.log(`ACCESSING PRIVATE REPO: ${$request.url}`);
+// 定义处理函数
+function handleRequest() {
+  if (username && username === config.username && isTargetRepo) {
+    log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
     $done({});
   }
-} else {
-  // 处理嵌套引用的函数
+}
+
+// 处理嵌套引用的函数
+function fetchContent(url) {
   const fetch = require("node-fetch");
-  fetch($request.url)
+  fetch(url)
     .then(response => response.text())
     .then(content => {
       if (content.includes("General74110")) {
         const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
         if (privateRepoMatch && privateRepoMatch[1] === config.username) {
-          console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
+          log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
           fetch(privateRepoMatch[0], {
             headers: { Authorization: `token ${config.token}` }
           })
@@ -41,7 +53,7 @@ if (isTargetRepo) {
             $done({ response: { body: privateContent } });
           })
           .catch(error => {
-            console.error(`Error fetching private content: ${error}`);
+            log(`Error fetching private content: ${error}`);
             $done({});
           });
         } else {
@@ -52,7 +64,25 @@ if (isTargetRepo) {
       }
     })
     .catch(error => {
-      console.error(`Error fetching content: ${error}`);
+      log(`Error fetching content: ${error}`);
       $done({});
     });
+}
+
+// 记录日志的函数
+function log(message) {
+  if (typeof $notify !== 'undefined') {
+    // Quantumult X 环境
+    $notify("GitHub Private Repo", "", message);
+  } else if (typeof console !== 'undefined') {
+    // Loon 环境
+    console.log(message);
+  }
+}
+
+// 检查并处理请求
+if (isTargetRepo) {
+  handleRequest();
+} else {
+  fetchContent($request.url);
 }
