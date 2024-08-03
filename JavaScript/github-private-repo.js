@@ -31,7 +31,7 @@ function handleRequest() {
     log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
-    fetchContent($request.url);
+    $done({});
   }
 }
 
@@ -57,9 +57,10 @@ function fetchContent(url) {
           $httpClient.get(privateOptions, function (privateError, privateResponse, privateData) {
             if (privateError) {
               log(`Error fetching private content: ${privateError}`);
-              $done({});
+              $done({ response: { body: data } });
             } else {
-              $done({ response: { body: privateData } });
+              const newData = data.replace(privateRepoMatch[0], privateData);
+              $done({ response: { body: newData } });
             }
           });
         } else {
@@ -84,4 +85,8 @@ function log(message) {
 }
 
 // 检查并处理请求
-handleRequest();
+if (isTargetRepo) {
+  handleRequest();
+} else {
+  fetchContent($request.url);
+}
