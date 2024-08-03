@@ -37,36 +37,39 @@ function handleRequest() {
 
 // 处理嵌套引用的函数
 function fetchContent(url) {
-  const fetch = require("node-fetch");
-  fetch(url)
-    .then(response => response.text())
-    .then(content => {
-      if (content.includes("General74110")) {
-        const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
-        if (privateRepoMatch && privateRepoMatch[1] === config.username) {
-          log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
-          fetch(privateRepoMatch[0], {
-            headers: { Authorization: `token ${config.token}` }
-          })
-          .then(privateResponse => privateResponse.text())
-          .then(privateContent => {
-            $done({ response: { body: privateContent } });
-          })
-          .catch(error => {
-            log(`Error fetching private content: ${error}`);
-            $done({});
-          });
-        } else {
-          $done({ response: { body: content } });
-        }
-      } else {
-        $done({ response: { body: content } });
-      }
-    })
-    .catch(error => {
+  const options = {
+    url: url,
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  };
+  $httpClient.get(options, function (error, response, data) {
+    if (error) {
       log(`Error fetching content: ${error}`);
       $done({});
-    });
+    } else {
+      if (data.includes("General74110")) {
+        const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
+        if (privateRepoMatch && privateRepoMatch[1] === config.username) {
+          log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
+          const privateOptions = {
+            url: privateRepoMatch[0],
+            headers: { 'Authorization': `token ${config.token}` }
+          };
+          $httpClient.get(privateOptions, function (privateError, privateResponse, privateData) {
+            if (privateError) {
+              log(`Error fetching private content: ${privateError}`);
+              $done({});
+            } else {
+              $done({ response: { body: privateData } });
+            }
+          });
+        } else {
+          $done({ response: { body: data } });
+        }
+      } else {
+        $done({ response: { body: data } });
+      }
+    }
+  });
 }
 
 // 记录日志的函数
