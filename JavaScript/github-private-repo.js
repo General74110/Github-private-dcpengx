@@ -1,6 +1,6 @@
 let config = {
-  username: "Peng-YM", // 默认用户名
-  token: "Your token", // 默认 token
+  username: "default_username", // 默认用户名
+  token: "default_token",       // 默认 token
 };
 
 // 从 BoxJS 读取用户配置
@@ -54,7 +54,7 @@ function fetchContent(url) {
 }
 
 // 检查并处理请求
-if ($request.url.includes("githubusercontent.com")) {
+if (username && username === config.username) {
   handleRequest();
 } else {
   fetchContent($request.url);
