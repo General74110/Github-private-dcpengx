@@ -4,7 +4,7 @@
 
 [Script]
 # 
-http-request ^https?:\/\/(raw|gist)\.githubusercontent.com script-path=https://raw.githubusercontent.com/General74110/Github-private-dcpengx/main/JavaScript/github-private-repo.js, timeout=60, tag=Github 私有仓库
+http-request ^https?:\/\/(raw|gist)\.githubusercontent.com\/.*General74110.* script-path=https://raw.githubusercontent.com/General74110/Github-private-dcpengx/main/JavaScript/github-private-repo.js, timeout=60, tag=Github 私有仓库
 
 [MITM]
 hostname = raw.githubusercontent.com, gist.githubusercontent.com
