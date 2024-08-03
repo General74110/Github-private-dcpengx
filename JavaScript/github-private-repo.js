@@ -60,7 +60,7 @@ function fetchContent(url) {
       $done({});
     } else {
       // 处理嵌套的私有仓库引用
-      const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/.*\/General74110\/[^\/]+/);
+      const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/[^\/]+\/General74110\/[^\/]+/);
       if (privateRepoMatch) {
         console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
         const privateFetchOptions = {
