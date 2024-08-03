@@ -31,8 +31,45 @@ function handleRequest() {
     log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
-    $done({});
+    fetchContent($request.url);
   }
+}
+
+// 处理嵌套引用的函数
+function fetchContent(url) {
+  const options = {
+    url: url,
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  };
+  $httpClient.get(options, function (error, response, data) {
+    if (error) {
+      log(`Error fetching content: ${error}`);
+      $done({});
+    } else {
+      if (data.includes("General74110")) {
+        const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
+        if (privateRepoMatch && privateRepoMatch[1] === config.username) {
+          log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
+          const privateOptions = {
+            url: privateRepoMatch[0],
+            headers: { 'Authorization': `token ${config.token}` }
+          };
+          $httpClient.get(privateOptions, function (privateError, privateResponse, privateData) {
+            if (privateError) {
+              log(`Error fetching private content: ${privateError}`);
+              $done({});
+            } else {
+              $done({ response: { body: privateData } });
+            }
+          });
+        } else {
+          $done({ response: { body: data } });
+        }
+      } else {
+        $done({ response: { body: data } });
+      }
+    }
+  });
 }
 
 // 记录日志的函数
@@ -46,5 +83,5 @@ function log(message) {
   }
 }
 
-// 直接处理请求
+// 检查并处理请求
 handleRequest();
