@@ -31,7 +31,7 @@ function handleRequest() {
     log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
-    $done({});
+    fetchContent($request.url);
   }
 }
 
@@ -41,36 +41,66 @@ function fetchContent(url) {
     url: url,
     headers: { 'User-Agent': 'Mozilla/5.0' }
   };
-  $httpClient.get(options, function (error, response, data) {
-    if (error) {
-      log(`Error fetching content: ${error}`);
-      $done({});
-    } else {
-      if (data.includes("General74110")) {
-        const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
-        if (privateRepoMatch && privateRepoMatch[1] === config.username) {
-          log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
-          const privateOptions = {
-            url: privateRepoMatch[0],
-            headers: { 'Authorization': `token ${config.token}` }
-          };
-          $httpClient.get(privateOptions, function (privateError, privateResponse, privateData) {
-            if (privateError) {
-              log(`Error fetching private content: ${privateError}`);
-              $done({ response: { body: data } });
-            } else {
-              const newData = data.replace(privateRepoMatch[0], privateData);
-              $done({ response: { body: newData } });
-            }
-          });
-        } else {
-          $done({ response: { body: data } });
-        }
+
+  if (typeof $httpClient !== 'undefined') {
+    // Loon 环境
+    $httpClient.get(options, function (error, response, data) {
+      if (error) {
+        log(`Error fetching content: ${error}`);
+        $done({});
       } else {
-        $done({ response: { body: data } });
+        handleNestedContent(data, url);
       }
+    });
+  } else if (typeof $task !== 'undefined') {
+    // Quantumult X 环境
+    $task.fetch(options).then(response => {
+      handleNestedContent(response.body, url);
+    }, reason => {
+      log(`Error fetching content: ${reason.error}`);
+      $done({});
+    });
+  }
+}
+
+// 处理嵌套引用的内容
+function handleNestedContent(data, url) {
+  if (data.includes("General74110")) {
+    const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
+    if (privateRepoMatch && privateRepoMatch[1] === config.username) {
+      log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
+      const privateOptions = {
+        url: privateRepoMatch[0],
+        headers: { 'Authorization': `token ${config.token}` }
+      };
+      
+      if (typeof $httpClient !== 'undefined') {
+        // Loon 环境
+        $httpClient.get(privateOptions, function (privateError, privateResponse, privateData) {
+          if (privateError) {
+            log(`Error fetching private content: ${privateError}`);
+            $done({ response: { body: data } });
+          } else {
+            const newData = data.replace(privateRepoMatch[0], privateData);
+            $done({ response: { body: newData } });
+          }
+        });
+      } else if (typeof $task !== 'undefined') {
+        // Quantumult X 环境
+        $task.fetch(privateOptions).then(privateResponse => {
+          const newData = data.replace(privateRepoMatch[0], privateResponse.body);
+          $done({ response: { body: newData } });
+        }, privateReason => {
+          log(`Error fetching private content: ${privateReason.error}`);
+          $done({ response: { body: data } });
+        });
+      }
+    } else {
+      $done({ response: { body: data } });
     }
-  });
+  } else {
+    $done({ response: { body: data } });
+  }
 }
 
 // 记录日志的函数
