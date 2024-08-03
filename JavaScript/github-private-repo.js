@@ -40,6 +40,7 @@ function fetchContent(url) {
     headers: { 'User-Agent': 'Mozilla/5.0' }
   };
 
+  // 统一处理 fetch 方法
   const fetch = (options, callback) => {
     if (isLoon) {
       $httpClient.get(options, callback);
@@ -59,8 +60,8 @@ function fetchContent(url) {
       $done({});
     } else {
       // 处理嵌套的私有仓库引用
-      const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
-      if (privateRepoMatch && privateRepoMatch[1] === config.username) {
+      const privateRepoMatch = data.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/.*\/General74110\/[^\/]+/);
+      if (privateRepoMatch) {
         console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
         const privateFetchOptions = {
           url: privateRepoMatch[0],
