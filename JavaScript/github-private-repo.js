@@ -40,9 +40,20 @@ function fetchContent(url) {
     headers: { 'User-Agent': 'Mozilla/5.0' }
   };
 
-  const fetch = isLoon ? $httpClient.get : isQX ? $task.fetch : null;
+  const fetch = (options, callback) => {
+    if (isLoon) {
+      $httpClient.get(options, callback);
+    } else if (isQX) {
+      const request = {
+        method: "GET",
+        url: options.url,
+        headers: options.headers
+      };
+      $task.fetch(request).then(response => callback(null, response, response.body), reason => callback(reason.error));
+    }
+  };
 
-  fetch(fetchOptions, function (error, response, data) {
+  fetch(fetchOptions, (error, response, data) => {
     if (error) {
       console.error(`Error fetching content: ${error}`);
       $done({});
@@ -55,7 +66,7 @@ function fetchContent(url) {
           headers: { Authorization: `token ${config.token}` }
         };
 
-        fetch(privateFetchOptions, function (privateError, privateResponse, privateData) {
+        fetch(privateFetchOptions, (privateError, privateResponse, privateData) => {
           if (privateError) {
             console.error(`Error fetching private content: ${privateError}`);
             $done({});
