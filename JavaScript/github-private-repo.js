@@ -13,9 +13,12 @@ if (boxConfig) {
 const usernameMatch = $request.url.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
 const username = usernameMatch ? usernameMatch[1] : null;
 
+// 检查 URL 中是否包含特定关键词
+const isTargetRepo = $request.url.includes("General74110");//私有仓库关键字
+
 // 定义处理函数
 function handleRequest() {
-  if (username && username === config.username) {
+  if (username && username === config.username && isTargetRepo) {
     console.log(`ACCESSING PRIVATE REPO: ${$request.url}`);
     $done({ headers: { ...$request.headers, Authorization: `token ${config.token}` } });
   } else {
@@ -29,7 +32,7 @@ function fetchContent(url) {
   fetch(url)
     .then(response => response.text())
     .then(content => {
-      const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\//);
+      const privateRepoMatch = content.match(/https:\/\/(?:raw|gist)\.githubusercontent\.com\/([^\/]+)\/(.*General74110.*)/);
       if (privateRepoMatch && privateRepoMatch[1] === config.username) {
         console.log(`FOUND PRIVATE REPO REFERENCE IN PUBLIC REPO: ${privateRepoMatch[0]}`);
         fetch(privateRepoMatch[0], {
@@ -54,7 +57,7 @@ function fetchContent(url) {
 }
 
 // 检查并处理请求
-if (username && username === config.username) {
+if (username && username === config.username && isTargetRepo) {
   handleRequest();
 } else {
   fetchContent($request.url);
