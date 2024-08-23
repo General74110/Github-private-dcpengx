@@ -1,0 +1,9 @@
+#!name=Github 私有仓库
+#!desc=改自Peng-YM（可直接使用Peng-YM大佬的boxjs订阅：https://raw.githubusercontent.com/Peng-YM/QuanX/master/Tasks/box.js.json）
+#!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png
+
+[Script]
+Github 私有仓库 = type=http-request, pattern=^https?:\/\/(raw|gist)\.githubusercontent.com\/.*General74110.*, requires-body=false, max-size=0, script-path=https://raw.githubusercontent.com/General74110/Github-private-dcpengx/main/JavaScript/github-private-repo.js, timeout=60
+
+[MITM]
+hostname = raw.githubusercontent.com, gist.githubusercontent.com
